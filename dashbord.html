@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Accident Detection & Alert System</title>
+
+<!-- Google Fonts & Font Awesome -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+
+  /* ---------- Base / Reset ---------- */
+  :root{
+    --bg1:#2563eb; --bg2:#1e3a8a;
+    --card:#ffffff; --ink:#0f172a; --muted:#334155;
+    --brand:#2563eb; --brand-strong:#1e40af;
+    --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+    --ring:rgba(37,99,235,.45);
+  }
+  *{box-sizing:border-box}
+  body {
+    font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    margin: 0;
+    color: var(--ink);
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('img/detection 2.jpeg') no-repeat center center / cover;
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  @keyframes bg{
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+  }
+
+  /* Custom scrollbars */
+  *{scrollbar-width:thin; scrollbar-color: var(--brand) transparent;}
+  *::-webkit-scrollbar{width:10px;height:10px}
+  *::-webkit-scrollbar-thumb{background:var(--brand);border-radius:8px}
+  *::-webkit-scrollbar-track{background:transparent}
+
+  /* Header */
+  header{
+    position:fixed; inset:0 auto auto 0; width:100%;
+    background:rgba(15,23,42,.7); backdrop-filter:blur(6px);
+    color:#fff; z-index:10; padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  header .title{font-weight:700; letter-spacing:.4px}
+  .controls{display:flex; gap:10px; align-items:center}
+  .icon-btn{
+    background:rgba(255,255,255,.15); color:#fff; border:0;
+    padding:8px 12px; border-radius:999px; cursor:pointer;
+  }
+
+  /* Sections */
+ main{width:100%; display:flex; justify-content:center ; margin-top: 100px; padding-bottom: 40px;}
+  section{display:none; width:min(92vw,1000px); }
+  section.active{display:block; animation:fade .45s ease}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+  /* Cards / Forms */
+  .card{
+    background:var(--card); border-radius:22px; padding:28px 24px 30px;
+    box-shadow:0 16px 40px rgba(0,0,0,.18);
+  }
+  /* Make Login/Signup cards transparent */
+  #loginBox, #signupBox {
+    background-color: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .dark #loginBox, .dark #signupBox {
+    background-color: rgba(11, 18, 32, 0.25);
+  }
+  h2{margin:0 0 18px; color:var(--bg2)}
+  .row{display:flex; gap:10px}
+  .input{
+    position:relative; margin:0 0 14px;
+  }
+  /* Specific text colors for transparent cards to ensure readability */
+  .text-on-glass { color: #334155; }
+  .dark .text-on-glass { color: #cbd5e1; }
+  .text-on-glass-strong { color: #1e293b; }
+  .dark .text-on-glass-strong { color: #e2e8f0; }
+  }
+  .input label{
+    display:block; font-size:14px; color:var(--muted); margin:0 0 6px;
+  }
+  .input input{
+    width:100%; padding:14px 44px 14px 42px; border-radius:12px;
+    border:2px solid #cbd5e1; font-size:15px; color:#0f172a;
+    transition:.25s border-color,.25s box-shadow;
+  }
+  .input input:focus{
+    border-color:var(--brand); box-shadow:0 0 0 4px var(--ring); outline:0;
+  }
+  .input i.leading{
+    position:absolute; left:12px; top:38px; color:#94a3b8; font-size:18px;
+    pointer-events:none;
+  }
+  .input button.trailing{
+    position:absolute; right:10px; top:36px; border:0; background:transparent;
+    color:#64748b; font-size:18px; cursor:pointer;
+  }
+  .msg{
+    font-size:12px; margin-top:6px; min-height:16px;
+  }
+  .msg.err{color:var(--err)} .msg.ok{color:var(--ok)} .msg.warn{color:var(--warn)}
+
+  .btn{
+    width:100%; padding:13px 14px; border:0; border-radius:14px;
+    background:var(--brand); color:#fff; font-weight:700; font-size:16px;
+    cursor:pointer; transition:.25s background,.25s transform,.25s box-shadow;
+    box-shadow:0 10px 20px rgba(37,99,235,.45); display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .btn:hover{background:var(--brand-strong); box-shadow:0 12px 24px rgba(30,64,175,.55)}
+  .btn:disabled{opacity:.7; cursor:not-allowed; transform:none; box-shadow:none}
+  .btn.secondary{background:#334155}
+  .btn.google{background:#4285F4}
+  .btn.google:hover{background:#3367d6}
+  .btn.facebook{background:#1877F2}
+  .btn.facebook:hover{background:#0f5bd3}
+  .btn.twitter{background:#111827}
+  .btn.twitter:hover{background:#000}
+
+  .inline{
+    text-align:center; color:var(--muted); font-size:14px; margin-top:12px;
+  }
+  .inline-btn{color:var(--brand); font-weight:600; text-decoration:none; cursor:pointer; background:none; border:none; padding:0; font-family:inherit; font-size:inherit;}
+  .inline-btn:hover{text-decoration:underline}
+
+  /* Strength meter */
+  .meter{height:10px; border-radius:8px; background:#e2e8f0; overflow:hidden; margin:6px 0 2px}
+  .meter > div{height:100%; width:0%; background:var(--err); transition:width .25s}
+  .meter.good{background:#e2e8f0} .meter.good > div{background:#f59e0b}
+  .meter.strong > div{background:#22c55e}
+
+  /* Captcha */
+  .captcha-box{
+    display:flex; gap:10px; align-items:center; margin-top:8px; flex-wrap:wrap;
+  }
+  .captcha-text{
+    background:#eef2ff; border:1px dashed #818cf8; padding:8px 12px; border-radius:10px; font-weight:600;
+  }
+  .captcha-refresh{border:0; background:#eef2ff; color:#4338ca; padding:8px 10px; border-radius:10px; cursor:pointer}
+
+  /* Spinner in buttons */
+  .spin{width:18px; height:18px; border:3px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Alerts (live regions) */
+  .aria-live{position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden}
+
+  /* Dark mode */
+  .dark body, .dark{color-scheme:dark}
+  .dark :root{
+    --card:#0b1220; --ink:#e5e7eb; --muted:#9ca3af;
+    --ring:rgba(147,197,253,.25);
+  }
+  .dark header{background:rgba(2,6,23,.7)}
+  .dark .card{box-shadow:0 16px 40px rgba(0,0,0,.55)}
+  .dark .input input{border-color:#314055; color:#e5e7eb; background:#0f172a}
+  .dark .input input:focus{box-shadow:0 0 0 4px rgba(59,130,246,.25)}
+  .dark .captcha-text{background:#0f172a; border-color:#334155; color:#e2e8f0}
+  .dark .captcha-refresh{background:#0f172a; color:#93c5fd}
+
+  /* Dashboard */
+  #dashboard .grid{
+    display:grid; gap:16px; grid-template-columns:1.2fr .8fr;
+  }
+  #dashboard .card .map{
+    background:#e2e8f0; border-radius:14px; height:280px;
+    display:grid; place-items:center; color:#64748b; font-weight:600;
+  }
+  .dark #dashboard .card .map { background: #1e293b; }
+  .badge{display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700}
+  .badge.high{background:#fee2e2; color:#b91c1c}
+  .badge.high.critical{animation:pulse-red 1.5s infinite}
+  .badge.medium{background:#ffedd5; color:#c2410c}
+  .badge.low{background:#dcfce7; color:#166534}
+  @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); } }
+
+  .list{display:flex; flex-direction:column; gap:10px; max-height:300px; overflow:auto}
+  .list .alert{background:#f8fafc; border-left:4px solid #2563eb; padding:10px 12px; border-radius:12px}
+  .dark .list .alert{background:#0f172a}
+
+  @media (max-width:880px){
+    #dashboard .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">🚨 CrashSense</div>
+  <div class="controls">
+    <button id="logoutBtn" class="icon-btn" style="display: none;" aria-label="Logout"><i class="fas fa-sign-out-alt"></i></button>
+    <button id="darkToggle" class="icon-btn" aria-label="Toggle theme"><i class="fas fa-moon"></i></button>
+  </div>
+</header>
+
+<main> 
+
+
+  <!-- AUTH SECTION -->
+  <section id="auth" class="active" aria-labelledby="authHeading">
+    <div class="flex flex-col md:flex-row gap-8 p-4">
+      <!-- Left Column: Info -->
+      <div class="flex-1 text-on-glass p-4">
+        <h1 style="color: #808080;" class="text-2xl font-bold text-on-glass-strong mb-4">🌐 Accident Detection & Alert System</h1>
+        <p class="mb-6 text-sm">
+          Our system provides real-time accident detection and instant emergency alerts to keep you safe on the road. Get started in seconds to protect yourself and your loved ones.
+        </p>
+
+        <h2 class="text-lg font-semibold text-on-glass-strong mb-3">🚑 How It Works</h2>
+        <ul class="space-y-3 text-sm list-none">
+          <li class="flex items-start gap-3">
+            <span class="mt-1">🔑</span>
+            <div><strong>Quick Sign Up / Login:</strong> Use your email or a social account to get started instantly.</div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="mt-1">📡</span>
+            <div><strong>Enable Location:</strong> Keep location services ON for accurate, real-time accident detection.</div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="mt-1">✍️</span>
+            <div><strong>Report Accidents:</strong> Witness an accident? Report the location, severity, and add notes to alert others.</div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="mt-1">🏥</span>
+            <div><strong>Instant Notifications:</strong> The system automatically alerts nearby hospitals and your emergency contacts.</div>
+          </li>
+        </ul>
+        <p class="mt-6 text-xs italic">In serious emergencies, always call <strong>108</strong> or your local helpline for immediate help.</p>
+      </div>
+
+      <!-- Right Column: Auth Forms -->
+      <div class="flex-1">
+    <div class="card" id="loginBox" role="region" aria-label="Login form">
+      <h2 style="color: #000000;" class="text-on-glass-strong" id="authHeading">Login</h2>
+
+      <form id="loginForm" novalidate>
+        <div class="input">
+          <label class="text-on-glass" for="loginEmail"style="color: #000000;">Email</label>
+          <i class="fas fa-envelope leading"></i>
+          <input id="loginEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required />
+          <div class="msg" id="loginEmailMsg" aria-live="polite"></div>
+        </div>
+
+        <div class="input">
+          <label class="text-on-glass" for="loginPass"style="color: #000000;">Password</label>
+          <i class="fas fa-lock leading"></i>
+          <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" required />
+          <button type="button" class="trailing" aria-label="Show/Hide password" data-toggle="#loginPass"><i class="fa-regular fa-eye"></i></button>
+          <div class="msg" id="loginPassMsg" aria-live="polite"></div>
+        </div>
+
+        <div class="row" style="align-items:center; justify-content:space-between; margin:6px 0 12px">
+          <label style="color: #000000;"class="flex items-center gap-2 cursor-pointer text-sm text-on-glass">
+            <input type="checkbox"  id="rememberMe" /> Remember me
+          </label>
+          <button style="color: #000000;" type="button" class="inline-btn text-sm" id="forgotOpen">Forgot password?</button>
+        </div>
+
+        <button id="loginBtn" class="btn" type="submit"><span>Login</span></button>
+
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn google" id="googleLogin"><i class="fab fa-google"></i> Login with Google</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button type="button" class="btn facebook" id="fbLogin" aria-label="Login with Facebook"><i class="fab fa-facebook-f"></i></button>
+          <button type="button" class="btn twitter" id="twLogin" aria-label="Login with Twitter"><i class="fab fa-x-twitter"></i></button>
+        </div>
+      </form>
+
+      <div style="color: #000000;" class="inline text-on-glass">Don’t have an account? <button type="button" id="toSignup" class="inline-btn">Sign up</button></div>
+    </div>
+
+    <div class="card" id="signupBox" role="region" aria-label="Signup form" style="display:none">
+      <h2 style="color: #000000;" class="text-on-glass-strong">Create Account</h2>
+      <form id="signupForm" novalidate>
+        <div class="input">
+          <label for="suName" style="color: #000000;" class="text-on-glass">Full Name</label>
+          <i class="fas fa-user leading"></i>
+          <input id="suName" type="text" autocomplete="name" placeholder="John Doe" required />
+          <div class="msg" id="suNameMsg" aria-live="polite"></div>
+        </div>
+
+        <div class="input">
+          <label for="suEmail" style="color: #000000;" class="text-on-glass">Email</label>
+          <i class="fas fa-envelope leading"></i>
+          <input id="suEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required />
+          <div class="msg" id="suEmailMsg" aria-live="polite"></div>
+        </div>
+
+        <div class="input">
+          <label for="suEmail2" style="color: #000000;" class="text-on-glass">Confirm Email</label>
+          <i class="fas fa-envelope leading"></i>
+          <input id="suEmail2" type="email" inputmode="email" autocomplete="email" placeholder="retype your email" required />
+          <div class="msg" id="suEmail2Msg" aria-live="polite"></div>
+        </div>
+
+        <div class="input">
+          <label for="suPass" style="color: #000000;" class="text-on-glass">Password</label>
+          <i class="fas fa-lock leading"></i>
+          <input id="suPass" type="password" autocomplete="new-password" placeholder="At least 8 chars" required />
+          <button type="button" class="trailing" aria-label="Show/Hide password" data-toggle="#suPass"><i class="fa-regular fa-eye"></i></button>
+          <div class="meter" id="meter"><div></div></div>
+          <div class="msg" id="suPassMsg" aria-live="polite"></div>
+        </div>
+
+        <div class="input">
+          <label for="suPass2" style="color: #000000;" class="text-on-glass">Confirm Password</label>
+          <i class="fas fa-lock leading"></i>
+          <input id="suPass2" type="password" autocomplete="new-password" placeholder="Retype password" required />
+          <button type="button" class="trailing" aria-label="Show/Hide password" data-toggle="#suPass2"><i class="fa-regular fa-eye"></i></button>
+          <div class="msg" id="suPass2Msg" aria-live="polite"></div>
+        </div>
+
+        <div class="captcha-box">
+          <span class="captcha-text" id="captchaText">?</span>
+          <input id="captchaInput" type="text" inputmode="numeric" placeholder="Answer" style="flex:1; padding:10px 12px; border-radius:10px; border:2px solid #cbd5e1">
+          <button type="button" class="captcha-refresh" id="captchaRefresh"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+        <div class="msg" id="captchaMsg" aria-live="polite"></div>
+
+        <button id="signupBtn" class="btn" type="submit"><span>Sign Up</span></button>
+      </form>
+
+      <div style="color: #000000;" class="inline text-on-glass">Already have an account? <button type="button" id="toLogin" class="inline-btn">Login</button></div>
+      <div class="aria-live" aria-live="polite" id="globalLive"></div>
+    </div>
+    </div>
+  </section>
+
+  <!-- DETAILS SECTION -->
+  <section id="details" aria-labelledby="detailsHeading">
+    <div class="card">
+      <h2 id="detailsHeading">User Details</h2>
+      <form id="detailsForm">
+        <div class="input">
+          <label for="dName">Full Name</label>
+          <i class="fas fa-user leading"></i>
+          <input id="dName" required />
+        </div>
+        <div class="input">
+          <label for="dAddress">Address</label>
+          <i class="fas fa-location-dot leading"></i>
+          <input id="dAddress" required />
+        </div>
+        <div class="input">
+          <label for="dEmail">Email</label>
+          <i class="fas fa-envelope leading"></i>
+          <input id="dEmail" type="email" required />
+        </div>
+        <div class="row">
+          <div class="input" style="flex:1">
+            <label for="dPhone">Phone</label>
+            <i class="fas fa-phone leading"></i>
+            <input id="dPhone" type="tel" required />
+          </div>
+          <div class="input" style="flex:1">
+            <label for="dEmergency">Emergency Phone</label>
+            <i class="fas fa-phone-volume leading"></i>
+            <input id="dEmergency" type="tel" required />
+          </div>
+        </div>
+        <div class="row">
+          <div class="input" style="flex:1">
+            <label for="dVehName">Vehicle Name</label>
+            <i class="fas fa-car leading"></i>
+            <input id="dVehName" required />
+          </div>
+          <div class="input" style="flex:1">
+            <label for="dVehNum">Vehicle Number</label>
+            <i class="fas fa-hashtag leading"></i>
+            <input id="dVehNum" required />
+          </div>
+        </div>
+        <div class="input">
+          <label for="dLicense">License Number</label>
+          <i class="fas fa-id-card leading"></i>
+          <input id="dLicense" required />
+        </div>
+
+        <button id="detailsBtn" class="btn" type="submit">Save & Continue</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- DASHBOARD SECTION -->
+  <section id="dashboard" aria-labelledby="dashHeading">
+    <div class="card">
+      <h2 id="dashHeading">Dashboard</h2>
+      <div style="margin:-6px 0 16px; color:#64748b; font-size:14px">
+        Welcome, <span id="who"></span> · <button id="editProfile" class="inline-btn">Edit profile</button>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>🗺️ Live Map</h3>
+          <div class="map">[ Map Placeholder ]</div>
+        </div>
+        <div class="card">
+          <h3>⚠️ Alerts</h3>
+          <div class="list" id="alertsList">
+            <div class="alert">🚗 Accident at <b>Main Street</b> · 10:45 AM <span class="badge high">High</span></div>
+            <div class="alert">🚗 Accident at <b>Highway 12</b> · 09:15 AM <span class="badge medium">Medium</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>📜 Accident History</h3>
+        <div style="overflow:auto">
+          <table style="width:100%; border-collapse:collapse">
+            <thead>
+              <tr style="text-align:left; background:#f1f5f9">
+                <th style="padding:10px">Date</th>
+                <th style="padding:10px">Time</th>
+                <th style="padding:10px">Location</th>
+                <th style="padding:10px">Severity</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td style="padding:8px">2025-08-28</td><td style="padding:8px">10:45 AM</td><td style="padding:8px">Main Street</td><td style="padding:8px"><span class="badge high">High</span></td></tr>
+              <tr><td style="padding:8px">2025-08-27</td><td style="padding:8px">09:15 AM</td><td style="padding:8px">Highway 12</td><td style="padding:8px"><span class="badge medium">Medium</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="text-center p-6 text-xs text-gray-300/80">
+  <div class="mb-2">
+    In case of a serious emergency, always call <strong>108</strong> or your local helpline immediately.
+    This is a demonstration application.
+  </div>
+  <div>
+    Accident Detection & Alert System &copy; 2024. All Rights Reserved.
+    · <button type="button" id="toSignup" class="inline-btn"><a href="#" class="hover:underline"> <span>Privacy Policy</span></a></button>
+    · <button type="button" id="toSignup" class="inline-btn"> <a href="#" class="hover:underline">Contact Us</a></button>
+  </div>
+</footer>
+
+<!-- Forgot Password Modal (simple) -->
+<div id="forgotModal" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:20">
+  <div class="card" style="width:min(92vw,420px);">
+    <h3 style="margin:0 0 12px">Reset Password</h3>
+    <p style="margin:0 0 12px; color:#64748b">Enter your email. We’ll send a reset link (demo).</p>
+    <div class="input">
+      <label for="fpEmail">Email</label>
+      <i class="fas fa-envelope leading"></i>
+      <input id="fpEmail" type="email" placeholder="you@example.com" />
+      <div class="msg" id="fpMsg"></div>
+    </div>
+    <div class="row">
+      <button class="btn secondary" id="fpCancel" type="button">Cancel</button>
+      <button class="btn" id="fpSend" type="button">Send Link</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   Utilities
+   - API_URL: Base URL for our backend server.
+   - fetchWithAuth: A helper to make authenticated API calls.
+========================================================= */
+const $ = (sel, root=document)=>root.querySelector(sel);
+const $$ = (sel, root=document)=>Array.from(root.querySelectorAll(sel));
+
+// Very light sanitization to prevent accidental HTML injection (frontend only)
+function sanitize(str){ return String(str).replace(/[<>&"']/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[s])); }
+
+const API_URL = 'http://localhost:5000/api';
+
+async function fetchWithAuth(endpoint, options = {}) {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  if (token) {
+    headers['x-auth-token'] = token;
+  }
+  return fetch(`${API_URL}${endpoint}`, { ...options, headers });
+}
+
+function setLoading(btn, isLoading){
+  btn.disabled = !!isLoading;
+  if(isLoading){
+    btn.dataset.prevHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spin"></span> Processing...';
+  }else{
+    btn.innerHTML = btn.dataset.prevHTML || btn.innerText || 'Submit';
+  }
+}
+function debounce(fn, wait=300){
+  let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); };
+}
+
+function switchSection(id){
+  $$("#auth, #details, #dashboard").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  // Show/hide logout button based on section
+  $("#logoutBtn").style.display = (id === 'dashboard' || id === 'details') ? 'block' : 'none';
+  // autofocus first input
+  const first = document.getElementById(id).querySelector("input");
+  if(first) first.focus();
+}
+
+/* =========================================================
+   UI & Theme
+========================================================= */
+const darkToggle = document.getElementById("darkToggle");
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+if(localStorage.getItem("theme")==="dark" || (!localStorage.getItem("theme") && prefersDark)){
+  document.documentElement.classList.add("dark");
+}
+updateThemeIcon();
+
+darkToggle.addEventListener("click", ()=>{
+  document.documentElement.classList.toggle("dark");
+  localStorage.setItem("theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+  updateThemeIcon();
+});
+function updateThemeIcon(){
+  darkToggle.innerHTML = document.documentElement.classList.contains("dark")
+    ? '<i class="fas fa-sun"></i>'
+    : '<i class="fas fa-moon"></i>';
+}
+
+// Logout Button
+const logoutBtn = document.getElementById('logoutBtn');
+logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    logoutBtn.style.display = 'none';
+    showLogin();
+    switchSection('auth');
+});
+
+/* =========================================================
+   Toggle Auth Views + Form Reset
+========================================================= */
+const loginBox = document.getElementById("loginBox");
+const signupBox = document.getElementById("signupBox");
+$$("#toSignup").forEach(btn => btn.addEventListener("click", ()=>showSignup()));
+document.getElementById("toLogin").addEventListener("click", ()=>showLogin());
+
+function resetForm(form){
+  form.reset();
+  $$(".msg", form).forEach(m=>m.textContent="");
+  $$("input", form).forEach(i=>{i.classList.remove("invalid","valid");});
+}
+
+function showSignup(){
+  loginBox.style.display="none";
+  signupBox.style.display="block";
+  resetForm(document.getElementById("signupForm"));
+  $("#suName").focus();
+}
+function showLogin(){
+  signupBox.style.display="none";
+  loginBox.style.display="block";
+  resetForm(document.getElementById("loginForm"));
+  $("#loginEmail").focus();
+}
+
+/* =========================================================
+   Password Show/Hide
+========================================================= */
+$$('button[data-toggle]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target = document.querySelector(btn.dataset.toggle);
+    if(!target) return;
+    target.type = (target.type === "password") ? "text" : "password";
+    btn.innerHTML = (target.type === "password") ? '<i class="fa-regular fa-eye"></i>' : '<i class="fa-regular fa-eye-slash"></i>';
+    target.focus();
+  });
+});
+
+/* =========================================================
+   Remember Me (email only)
+========================================================= */
+const remembered = localStorage.getItem("rememberEmail");
+if(remembered){ $("#loginEmail").value = remembered; $("#rememberMe").checked = true; }
+
+/* =========================================================
+   Login Form (Connected to Backend)
+========================================================= */
+const loginForm = document.getElementById("loginForm");
+const loginBtn  = document.getElementById("loginBtn");
+const loginEmail = document.getElementById("loginEmail");
+const loginPass = document.getElementById("loginPass");
+
+const vLogin = debounce(()=>{
+  $("#loginEmailMsg").textContent = loginEmail.validity.valid ? "" : "Invalid email format.";
+  $("#loginPassMsg").textContent = loginPass.value.length>=1 ? "" : "Password required.";
+  loginEmail.classList.toggle("invalid", !loginEmail.validity.valid);
+  loginPass.classList.toggle("invalid", loginPass.value.length<1);
+  loginEmail.classList.toggle("valid", loginEmail.validity.valid);
+}, 250);
+loginEmail.addEventListener("input", vLogin);
+loginPass.addEventListener("input", vLogin);
+
+loginForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  vLogin();
+  if(!loginEmail.validity.valid || loginPass.value.length<1) return;
+
+  if($("#rememberMe").checked){ localStorage.setItem("rememberEmail", loginEmail.value); }
+  else { localStorage.removeItem("rememberEmail"); }
+
+  setLoading(loginBtn, true);
+  try {
+    const res = await fetchWithAuth('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: loginEmail.value, password: loginPass.value })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      const errorMsg = data.errors ? data.errors[0].msg : 'Login failed. Please check your credentials.';
+      $("#loginPassMsg").textContent = errorMsg;
+      $("#loginPassMsg").className = 'msg err';
+      throw new Error(errorMsg);
+    }
+
+    localStorage.setItem('token', data.token);
+    await initApp(); // Re-initialize app state and switch to correct section
+  } catch (error) {
+    console.error('Login error:', error);
+  } finally {
+    setLoading(loginBtn, false);
+  }
+});
+
+/* =========================================================
+   Signup Form (Connected to Backend)
+========================================================= */
+const suForm = document.getElementById("signupForm");
+const suName = document.getElementById("suName");
+const suEmail = document.getElementById("suEmail");
+const suEmail2 = document.getElementById("suEmail2");
+const suPass = document.getElementById("suPass");
+const suPass2 = document.getElementById("suPass2");
+const meter = document.getElementById("meter");
+const meterFill = meter.querySelector("div");
+const captchaText = document.getElementById("captchaText");
+const captchaInput = document.getElementById("captchaInput");
+const captchaMsg = document.getElementById("captchaMsg");
+const suBtn = document.getElementById("signupBtn");
+
+let captchaAns = 0;
+function regenCaptcha(){
+  // simple math captcha
+  const a = Math.floor(Math.random()*9)+1;
+  const b = Math.floor(Math.random()*9)+1;
+  captchaAns = a+b;
+  captchaText.textContent = `Solve: ${a} + ${b} = ?`;
+  captchaInput.value = "";
+  captchaMsg.textContent = "";
+}
+regenCaptcha();
+document.getElementById("captchaRefresh").addEventListener("click", regenCaptcha);
+
+function passStrength(pw){
+  let score = 0;
+  if(pw.length >= 8) score++;
+  if(/[A-Z]/.test(pw)) score++;
+  if(/[a-z]/.test(pw)) score++;
+  if(/[0-9]/.test(pw)) score++;
+  if(/[^A-Za-z0-9]/.test(pw)) score++;
+  return score; // 0..5
+}
+
+const vSignup = debounce(()=>{
+  // name
+  $("#suNameMsg").textContent = suName.value.trim().length ? "" : "Name is required.";
+  suName.classList.toggle("invalid", !suName.value.trim().length);
+  suName.classList.toggle("valid", !!suName.value.trim().length);
+
+  // email
+  $("#suEmailMsg").textContent = suEmail.validity.valid ? "" : "Invalid email format.";
+  suEmail.classList.toggle("invalid", !suEmail.validity.valid);
+  suEmail.classList.toggle("valid", suEmail.validity.valid);
+
+  // confirm email
+  const emailMatch = suEmail2.value && (suEmail2.value === suEmail.value);
+  $("#suEmail2Msg").textContent = emailMatch ? "" : (suEmail2.value ? "Emails do not match." : "Please retype your email.");
+  suEmail2.classList.toggle("invalid", !emailMatch);
+  suEmail2.classList.toggle("valid", emailMatch);
+
+  // password + strength
+  const s = passStrength(suPass.value);
+  const pct = Math.min(100, s*20);
+  meterFill.style.width = pct + "%";
+  meter.classList.toggle("good", s>=3 && s<4);
+  meter.classList.toggle("strong", s>=4);
+  $("#suPassMsg").textContent = s<3 ? "Weak password. Use 8+ chars, mixed case, numbers & symbols." : (s<4 ? "Good password." : "Strong password.");
+  suPass.classList.toggle("invalid", s<3);
+  suPass.classList.toggle("valid", s>=3);
+
+  // confirm pass
+  const pwMatch = suPass2.value && (suPass.value === suPass2.value);
+  $("#suPass2Msg").textContent = pwMatch ? "" : (suPass2.value ? "Passwords do not match." : "Please retype your password.");
+  suPass2.classList.toggle("invalid", !pwMatch);
+  suPass2.classList.toggle("valid", pwMatch);
+
+}, 250);
+
+[suName,suEmail,suEmail2,suPass,suPass2].forEach(i=>i.addEventListener("input", vSignup));
+
+suForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  vSignup();
+
+  const ok = suName.value.trim().length &&
+             suEmail.validity.valid &&
+             suEmail2.value === suEmail.value &&
+             passStrength(suPass.value) >= 3 &&
+             suPass.value === suPass2.value;
+
+  if(!ok){ return; }
+
+  // captcha
+  if(parseInt(captchaInput.value,10) !== captchaAns){
+    captchaMsg.textContent = "Incorrect answer. Please try again.";
+    return;
+  }
+
+  setLoading(suBtn, true);
+  try {
+    const res = await fetchWithAuth('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name: suName.value, email: suEmail.value, password: suPass.value })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      const errorMsg = data.errors ? data.errors[0].msg : 'Signup failed. Please try again.';
+      $("#captchaMsg").textContent = errorMsg;
+      throw new Error(errorMsg);
+    }
+
+    localStorage.setItem('token', data.token);
+    alert("Account created! Please complete your profile.");
+    await initApp();
+  } catch (error) {
+    console.error('Signup error:', error);
+  } finally {
+    setLoading(suBtn, false);
+  }
+});
+
+/* =========================================================
+   Forgot Password (demo)
+========================================================= */
+const forgotModal = document.getElementById("forgotModal");
+document.getElementById("forgotOpen").addEventListener("click", ()=>{
+  forgotModal.style.display="flex";
+  $("#fpEmail").value = $("#loginEmail").value || "";
+  $("#fpEmail").focus();
+});
+document.getElementById("fpCancel").addEventListener("click", ()=>forgotModal.style.display="none");
+document.getElementById("fpSend").addEventListener("click", ()=>{
+  const em = $("#fpEmail");
+  if(!em.value || !em.checkValidity()){ $("#fpMsg").textContent="Please enter a valid email."; return; }
+  $("#fpMsg").textContent="";
+  document.getElementById("fpSend").disabled=true;
+  document.getElementById("fpSend").innerHTML='<span class="spin"></span> Sending...';
+  setTimeout(()=>{
+    alert("Reset link sent (demo). Check your inbox.");
+    forgotModal.style.display="none";
+    document.getElementById("fpSend").disabled=false;
+    document.getElementById("fpSend").innerHTML='Send Link';
+  },900);
+});
+
+/* =========================================================
+   Social Login Buttons (placeholders)
+   Replace with real OAuth flows on backend later.
+========================================================= */
+function fakeOAuth(provider){
+  alert(provider+" OAuth flow would start here (demo).");
+  // Pretend we got a user back:
+  $("#dEmail").value = provider.toLowerCase()+"_user@example.com";
+  $("#dName").value = provider+" User";
+  switchSection("details");
+}
+document.getElementById("googleLogin").addEventListener("click", ()=>fakeOAuth("Google"));
+document.getElementById("fbLogin").addEventListener("click", ()=>fakeOAuth("Facebook"));
+document.getElementById("twLogin").addEventListener("click", ()=>fakeOAuth("Twitter"));
+
+/* =========================================================
+   Details Form (Connected to Backend)
+========================================================= */
+const detailsForm = document.getElementById("detailsForm");
+const detailsBtn = document.getElementById("detailsBtn");
+
+detailsForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+
+  const profile = {
+    name: $("#dName").value,
+    address: $("#dAddress").value,
+    email: $("#dEmail").value, // Note: email is not updated here, just for consistency
+    phone: $("#dPhone").value,
+    emergencyPhone: $("#dEmergency").value,
+    vehicleName: $("#dVehName").value,
+    vehicleNumber: $("#dVehNum").value,
+    licenseNumber: $("#dLicense").value,
+  };
+
+  setLoading(detailsBtn, true);
+  try {
+    const res = await fetchWithAuth('/profile', {
+      method: 'POST',
+      body: JSON.stringify(profile)
+    });
+    if (!res.ok) throw new Error('Failed to save details.');
+
+    await initApp(); // Re-init to show dashboard
+  } catch (error) {
+    console.error('Details save error:', error);
+    alert('Could not save your details. Please try again.');
+  } finally {
+    setLoading(detailsBtn, false);
+  }
+});
+
+// Edit profile from dashboard
+document.getElementById("editProfile").addEventListener("click", ()=>{
+  // Data is already populated by initApp, just switch view
+  switchSection("details");
+});
+
+/* =========================================================
+   Application Initialization & Auth State
+========================================================= */
+function populateDetailsForm(profile) {
+  if (!profile) return;
+  $("#dName").value = profile.name || "";
+  $("#dEmail").value = profile.email || "";
+  $("#dAddress").value = profile.address || "";
+  $("#dPhone").value = profile.phone || "";
+  $("#dEmergency").value = profile.emergencyPhone || "";
+  $("#dVehName").value = profile.vehicleName || "";
+  $("#dVehNum").value = profile.vehicleNumber || "";
+  $("#dLicense").value = profile.licenseNumber || "";
+}
+
+function populateDashboard(profile) {
+  if (!profile) return;
+  $("#who").textContent = profile.name || profile.email || "User";
+  // In a real app, you would fetch and populate alerts and history here
+}
+
+async function initApp() {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    switchSection('auth');
+    return;
+  }
+  const res = await fetchWithAuth('/profile');
+  if (!res.ok) {
+    localStorage.removeItem('token');
+    switchSection('auth');
+    return;
+  }
+  const profile = await res.json();
+  populateDetailsForm(profile);
+  populateDashboard(profile);
+
+  // If profile is incomplete, force user to the details page
+  if (!profile.address || !profile.phone || !profile.vehicleName) {
+    switchSection('details');
+  } else {
+    switchSection('dashboard');
+  }
+}
+
+// Start the application
+initApp();
+
+</script>
+</body>
+</html>
