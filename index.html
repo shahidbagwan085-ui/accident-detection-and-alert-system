@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accident Detection & Alert System</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #4f46e5, #7e22ce);
+      --alert-gradient: linear-gradient(135deg, #ef4444, #b91c1c);
+      --card-bg: white;
+      --text-color: #111827;
+      --bg-color: #f3f4f6;
+      --border-color: #e5e7eb;
+      --header-height: 70px;
+    }
+
+    .dark-mode {
+      --primary-gradient: linear-gradient(135deg, #312e81, #581c87);
+      --alert-gradient: linear-gradient(135deg, #991b1b, #7f1d1d);
+      --card-bg: #1f2937;
+      --text-color: #f9fafb;
+      --bg-color: #111827;
+      --border-color: #374151;
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-color);
+      margin: 0;
+      padding: 0;
+      color: var(--text-color);
+      padding-top: calc(var(--header-height) + 20px);
+    }
+
+    header {
+      background: var(--primary-gradient);
+      color: white;
+      padding: 15px 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: var(--header-height);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      padding: 0 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 0;
+      color: var(--text-color);
+    }
+
+    .map-container {
+      position: relative;
+    }
+
+    .map {
+      height: 50vh;
+      background: #d1d5db;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .map-loader {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: 10px;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #4f46e5;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .alert {
+      background: var(--card-bg);
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      border-left: 4px solid #ef4444;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+    }
+
+    th {
+      background: rgba(0,0,0,0.03);
+      font-weight: 500;
+    }
+
+    .severity {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      display: inline-block;
+      min-width: 80px;
+    }
+
+    .high { 
+      background-color: #fee2e2; 
+      color: #b91c1c;
+    }
+
+    .medium { 
+      background-color: #ffedd5; 
+      color: #c2410c;
+    }
+
+    .low { 
+      background-color: #dcfce7; 
+      color: #166534;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 8px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .filter-btn.active {
+      background: var(--primary-gradient);
+      color: white;
+      border-color: transparent;
+    }
+
+    .search-container {
+      position: relative;
+      flex-grow: 1;
+    }
+
+    .search-container i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 15px 8px 35px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .clock {
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-right: 15px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    /* Login Button */
+    .login-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.3s;
+    }
+
+    .login-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    /* Modal & Blur Effect */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 500px;
+      transform: translateY(-20px);
+      transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .modal-btn.primary {
+      background: var(--primary-gradient);
+      color: white;
+    }
+
+    .modal-btn.secondary {
+      background: #6b7280;
+      color: white;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .map {
+        height: 40vh;
+      }
+
+      h1 {
+        font-size: 1.2rem;
+      }
+
+      .table-container {
+        overflow-x: auto;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .search-container {
+        order: -1;
+        margin-bottom: 10px;
+      }
+    }
+
+    /* Table Responsiveness */
+    .table-container {
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><i class="fas fa-exclamation-triangle"></i> Accident Detection & Alert System</h1>
+    <div class="header-right">
+      <div id="clock" class="clock"></div>
+      <button id="theme-toggle" class="theme-toggle">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button id="login-button" class="login-btn">
+       <a href="#" onclick="showPage('login')"><i class="fas fa-sign-in-alt"></i> Login</a>
+      </button>
+    </div>
+  </header>
+
+  <!-- Modal Overlay -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>User Options</h3>
+        <button class="modal-close" id="modal-close">×</button>
+      </div>
+      <div class="modal-content">
+        <p>You are currently logged in as a guest.</p>
+        <p>Would you like to:</p>
+        <div class="modal-buttons">
+          <button class="modal-btn primary" onclick="window.location.href='login.html'">Login</button>
+          <button class="modal-btn secondary" id="close-modal-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Left Side: Map -->
+    <div class="card">
+      <h2><i class="fas fa-map-marked-alt"></i> Live Accident Map</h2>
+      <div class="map-container">
+        <div id="map" class="map"></div>
+        <div class="map-loader" id="map-loader">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side: Alerts -->
+    <div class="card">
+      <h2><i class="fas fa-bell"></i> Alerts</h2>
+      <div id="alerts">
+        <div class="alert">
+          <i class="fas fa-car-crash"></i> Accident at <b>Main Street</b> - 10:45 AM
+          <span class="severity high">High</span>
+        </div>
+        <div class="alert">
+          <i class="fas fa-car-crash"></i> Accident at <b>Highway 12</b> - 09:15 AM
+          <span class="severity medium">Medium</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Width: History -->
+  <div class="card" style="margin: 20px; max-width: 1400px; margin-left: auto; margin-right: auto;">
+    <h2><i class="fas fa-history"></i> Accident History</h2>
+    
+    <div class="controls">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="high">High</button>
+      <button class="filter-btn" data-filter="medium">Medium</button>
+      <button class="filter-btn" data-filter="low">Low</button>
+      
+      <div class="search-container">
+        <i class="fas fa-search"></i>
+        <input type="text" class="search-input" id="search-input" placeholder="Search by location...">
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Location</th>
+            <th>Severity</th>
+          </tr>
+        </thead>
+        <tbody id="history">
+          <tr>
+            <td>2025-08-28</td>
+            <td>10:45 AM</td>
+            <td>Main Street</td>
+            <td><span class="severity high">High</span></td>
+          </tr>
+          <tr>
+            <td>2025-08-27</td>
+            <td>09:15 AM</td>
+            <td>Highway 12</td>
+            <td><span class="severity medium">Medium</span></td>
+          </tr>
+          <tr>
+            <td>2025-08-26</td>
+            <td>14:30 PM</td>
+            <td>Park Avenue</td>
+            <td><span class="severity low">Low</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Modal functionality
+    const modalOverlay = document.getElementById('modal-overlay');
+    const loginButton = document.getElementById('login-button');
+    const modalClose = document.getElementById('modal-close');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    
+    loginButton.addEventListener('click', () => {
+      modalOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
+    });
+    
+    function closeModal() {
+      modalOverlay.classList.remove('active');
+      document.body.style.overflow = ''; // Re-enable scrolling
+    }
+    
+    modalClose.addEventListener('click', closeModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    
+    // Close modal when clicking outside
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        closeModal();
+      }
+    });
+
+    // Dark mode toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = themeToggle.querySelector('i');
+    
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      if (document.body.classList.contains('dark-mode')) {
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
+      } else {
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
+      }
+    });
+
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('clock').textContent = timeString;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Check if user is logged in
+    function checkLoginStatus() {
+      const userEmail = localStorage.getItem("userEmail");
+      const loginBtn = document.getElementById("login-button");
+      
+      if (userEmail) {
+        loginBtn.innerHTML = `<i class="fas fa-user-check"></i> ${userEmail.split('@')[0]}`;
+      }
+    }
+    
+    // Run on page load
+    checkLoginStatus();
+
+    // Initialize map
+    const mapLoader = document.getElementById('map-loader');
+    
+    setTimeout(() => {
+      const map = L.map('map').setView([51.505, -0.09], 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      
+      // Add accident markers
+      const accidents = [
+        { lat: 51.505, lng: -0.09, severity: 'high', location: 'Main Street' },
+        { lat: 51.51, lng: -0.1, severity: 'medium', location: 'Highway 12' },
+        { lat: 51.5, lng: -0.08, severity: 'low', location: 'Park Avenue' }
+      ];
+      
+      accidents.forEach(accident => {
+        const markerColor = accident.severity === 'high' ? 'red' : 
+                           accident.severity === 'medium' ? 'orange' : 'green';
+        
+        const pulsingIcon = L.divIcon({
+          className: `pulsing-icon ${accident.severity}`,
+          html: `<div style="width: 20px; height: 20px; background: ${markerColor}; border-radius: 50%; box-shadow: 0 0 0 rgba(${markerColor === 'red' ? '255,0,0' : markerColor === 'orange' ? '255,165,0' : '0,128,0'}, 0.4); animation: pulse 1.5s infinite;"></div>`,
+          iconSize: [20, 20]
+        });
+        
+        L.marker([accident.lat, accident.lng], {icon: pulsingIcon})
+         .addTo(map)
+         .bindPopup(`<b>${accident.location}</b><br>Severity: ${accident.severity}`);
+      });
+      
+      // Hide loader
+      mapLoader.style.display = 'none';
+    }, 1500);
+    
+    // Add CSS for pulsing effect
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Example JS: Adding a new accident alert dynamically
+    function addAccident(location, time, severity) {
+      // Create notification sound
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.play();
+      
+      // Add to alerts
+      const alerts = document.getElementById("alerts");
+      const div = document.createElement("div");
+      div.className = "alert";
+      div.innerHTML = `
+        <i class="fas fa-car-crash"></i> Accident at <b>${location}</b> - ${time}
+        <span class="severity ${severity.toLowerCase()}">${severity}</span>
+      `;
+      alerts.prepend(div);
+
+      // Add to history table
+      const history = document.getElementById("history");
+      const row = history.insertRow(0);
+      row.innerHTML = `
+        <td>${new Date().toISOString().split('T')[0]}</td>
+        <td>${time}</td>
+        <td>${location}</td>
+        <td><span class="severity ${severity.toLowerCase()}">${severity}</span></td>
+      `;
+    }
+
+    // Demo: Add a new accident after 3 seconds
+    setTimeout(() => {
+      addAccident("Ring Road", "11:10 AM", "High");
+    }, 3000);
+    
+    // Filter functionality
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Update active state
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Filter table rows
+        const filter = button.dataset.filter;
+        const rows = document.querySelectorAll('#history tr');
+        
+        rows.forEach(row => {
+          const severityCell = row.querySelector('td:last-child');
+          if (!severityCell) return;
+          
+          if (filter === 'all' || severityCell.textContent.toLowerCase().includes(filter)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    });
+    
+    // Search functionality
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      const rows = document.querySelectorAll('#history tr');
+      
+      rows.forEach(row => {
+        const locationCell = row.querySelector('td:nth-child(3)');
+        if (!locationCell) return;
+        
+        if (locationCell.textContent.toLowerCase().includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
