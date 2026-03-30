@@ -194,6 +194,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 Made with ❤️ by **[Your Name](https://github.com/your-username)**
 
----
+--
 
 > ⭐ If you found this project helpful, please give it a star on GitHub!
