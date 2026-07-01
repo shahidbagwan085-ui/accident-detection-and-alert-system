@@ -192,7 +192,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## 👨‍💻 Author
 
-Made with ❤️ by **[Your Name](https://github.com/your-username)**
+Made with ❤️ by **ShahidBagwan(https://github.com/shahidbagwan085-ui)**
 
 --
 
